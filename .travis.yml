@@ -1,0 +1,36 @@
+language: python
+python:
+  - "3.13"
+
+install:
+  - cd djangotutorial
+  - pip install -r requirements.txt
+  - pip install black flake8 coverage coveralls
+
+before_script:
+  - python manage.py migrate
+
+script:
+  - black --check .
+  - flake8 .
+  - coverage run --source=mysite,polls manage.py test
+
+after_success:
+  - coveralls
+
+before_deploy:
+  - cd "$TRAVIS_BUILD_DIR/djangotutorial"
+  - zip -r "$TRAVIS_BUILD_DIR/deploy.zip" . -x "*.pyc" -x "*__pycache__*" -x "*.elasticbeanstalk/*" -x "venv/*" -x ".DS_Store"
+
+deploy:
+  provider: elasticbeanstalk
+  edge: true
+  region: "us-east-1"
+  app: "swe1-app"
+  env: "tl4732-swe1"
+  bucket: "elasticbeanstalk-us-east-1-521294962730"
+  zip_file: "deploy.zip"
+  access_key_id: "$AWS_ACCESS_KEY_ID"
+  secret_access_key: "$AWS_SECRET_ACCESS_KEY"
+  on:
+    branch: main
